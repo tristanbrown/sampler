@@ -4,6 +4,7 @@ import __about__
 
 REQUIREMENTS = [
     'numpy',
+    'sympy',
 ]
 
 setup(
