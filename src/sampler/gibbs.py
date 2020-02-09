@@ -1,4 +1,5 @@
 """A Gibbs sampler."""
+import time
 import numpy as np
 import sympy as sp
 
@@ -11,12 +12,13 @@ class Gibbs():
 
     def sample(self, n_results):
         """Samples n vectors."""
+        start = time.time()
         samples = [self.constraint.example]
         while len(samples) < n_results + 1:
             samples.append(self.sample_vector(samples[-1]))
-        if not self.verify(samples):
-            print("WARNING: INVALID SAMPLES")
-        return samples[1:]
+        self.samples = samples[1:]
+        end = int(time.time() - start)
+        print(f"Generated {len(self.samples)} samples in {end} seconds.")
 
     def sample_vector(self, vector):
         """Sample each component of a vector, in random order."""
@@ -55,6 +57,18 @@ class Gibbs():
         simplified = sp.solve(expr)
         return simplified.as_set()
 
-    def verify(self, samples):
-        valid = [self.constraint.apply(sample) for sample in samples]
+    def verify(self):
+        """Verify that all of the associated samples are valid."""
+        valid = [self.constraint.apply(sample) for sample in self.samples]
         return all(valid)
+
+    def samples_out(self, path):
+        """Write the sampled vectors to an output file."""
+        result = [' '.join([str(i) for i in vector]) for vector in self.samples]
+        result = '\n'.join(result)
+        with open(path, 'w') as f:
+            f.write(result)
+
+    def clear(self):
+        """Clear all samples."""
+        self.samples = []
