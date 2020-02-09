@@ -1,5 +1,7 @@
 """A Gibbs sampler."""
 import time
+from concurrent.futures import ProcessPoolExecutor
+
 import numpy as np
 import sympy as sp
 
@@ -10,15 +12,24 @@ class Gibbs():
         self.constraint = constraints
         self.samples = []
 
-    def sample(self, n_results):
+    def sample(self, n_results, workers=8):
         """Samples n vectors."""
         start = time.time()
+        if workers <= 1:
+            self.samples = self._sample(n_results)
+        else:
+            n_per = -(-n_results // workers)
+            with ProcessPoolExecutor(max_workers=workers) as executor:
+                samples = executor.map(self._sample, workers * [n_per])
+            self.samples = [sample for subset in samples for sample in subset][:n_results]
+        end = int(time.time() - start)
+        print(f"Generated {len(self.samples)} samples in {end} seconds.")
+
+    def _sample(self, n_results):
         samples = [self.constraint.example]
         while len(samples) < n_results + 1:
             samples.append(self.sample_vector(samples[-1]))
-        self.samples = samples[1:]
-        end = int(time.time() - start)
-        print(f"Generated {len(self.samples)} samples in {end} seconds.")
+        return samples[1:]
 
     def sample_vector(self, vector):
         """Sample each component of a vector, in random order."""
